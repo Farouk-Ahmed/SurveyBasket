@@ -1,8 +1,14 @@
 using Microsoft.OpenApi.Models;
-using SurveyBasket; // Add this using directive
+using SurveyBasket;
+using SurveyBasket.NewFolder; // Add this using directive
+using Microsoft.AspNetCore.Identity;
+using SurveyBasket.Entities;
+
 var builder = WebApplication.CreateBuilder(args);
 // Call the extension method to register services
 builder.Services.AddSurveyBasket(builder.Configuration);
+
+
 
 var app = builder.Build();
 
@@ -24,7 +30,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();

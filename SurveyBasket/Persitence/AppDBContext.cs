@@ -1,8 +1,10 @@
 ﻿
 
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+
 namespace SurveyBasket.NewFolder
 {
-    public class AppDBContext : DbContext
+    public class AppDBContext : IdentityDbContext<AppUser>
     {
         public AppDBContext(DbContextOptions<AppDBContext> options) : base(options)
         {
@@ -12,6 +14,8 @@ namespace SurveyBasket.NewFolder
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfiguration(new PollConfiguration());
+            modelBuilder.ApplyConfiguration(new UserConfiguration());
+            
 
         }
     }

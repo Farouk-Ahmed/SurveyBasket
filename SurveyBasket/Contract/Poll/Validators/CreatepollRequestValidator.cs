@@ -1,4 +1,6 @@
-﻿namespace SurveyBasket.Validators
+﻿using SurveyBasket.Contract.Poll.Request;
+
+namespace SurveyBasket.Contract.Poll.Validators
 {
     public class CreatepollRequestValidator : AbstractValidator<PollReuestq>
     {

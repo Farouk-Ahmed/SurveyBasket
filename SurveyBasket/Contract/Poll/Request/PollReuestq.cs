@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace SurveyBasket.Contract.Request
+namespace SurveyBasket.Contract.Poll.Request
 {
     public record PollReuestq
         (
