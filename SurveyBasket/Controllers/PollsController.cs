@@ -7,6 +7,7 @@ namespace SurveyBasket.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class PollsController : ControllerBase
     {
         private readonly IPoll_serveis _poll_service;
@@ -17,7 +18,6 @@ namespace SurveyBasket.Controllers
 
         [HttpGet]
         [Route("GetPolls")]
-        [Authorize]
         public async Task<IActionResult> GetPolls(CancellationToken cancellationToken)
         {
             var polls = await _poll_service.GetPollsAsync(cancellationToken);

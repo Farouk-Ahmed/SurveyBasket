@@ -10,6 +10,7 @@ using Microsoft.OpenApi.Models;
 using SurveyBasket.NewFolder;
 using SurveyBasket.Services;
 using SurveyBasket.Services.Authntchan;
+using SurveyBasket.Services.Authntchan.Options;
 using System.IdentityModel.Tokens.Jwt;
 using System.Reflection;
 using System.Text;
@@ -20,7 +21,7 @@ namespace SurveyBasket
     {
         public static IServiceCollection AddSurveyBasket(this IServiceCollection builder, IConfiguration configuration)
         {
-
+    
             // Add services to the container.
 
             builder.AddControllers();
@@ -29,7 +30,7 @@ namespace SurveyBasket
                 .AddSwaggeeConf()
                 .AddMapsterConf()
                 .AddFluentConf()
-                .AddAuthConf();
+                .AddAuthConf(configuration);
 			// Register the DbContext with the connection string from configuration
 			var connectionString = configuration.GetConnectionString("DefaultConnection");
             builder.AddDbContext<AppDBContext>(options =>
@@ -84,30 +85,44 @@ namespace SurveyBasket
 
             return builder;
         }
-		private static IServiceCollection AddAuthConf(this IServiceCollection builder)
+		private static IServiceCollection AddAuthConf(this IServiceCollection builder , IConfiguration configuration)
 		{
-            builder.AddSingleton<ITokenProvedr,TokenProveder>();
-			builder.AddIdentity<AppUser,IdentityRole>().AddEntityFrameworkStores<AppDBContext>();
+            builder.AddIdentity<AppUser, IdentityRole>().AddEntityFrameworkStores<AppDBContext>();
+            
+            // Configure JwtOptions
+            //builder.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+               builder.AddOptions<JwtOptions>()
+                .BindConfiguration(JwtOptions.SectionName)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+            var settings = new JwtOptions();
+            configuration.GetSection(JwtOptions.SectionName).Bind(settings);
+            builder.AddSingleton(settings);
+    
+            // Register TokenProveder as scoped instead of singleton since it depends on JwtOptions
+            builder.AddScoped<ITokenProvedr, TokenProveder>();
+
             builder.AddAuthentication(op =>
-            {
+            {                                                                                                 
                 op.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 op.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }) // Added missing semicolon and fixed scheme name
-                .AddJwtBearer(o =>
+            })
+            .AddJwtBearer(o =>
+            {
+                o.SaveToken = true;
+                o.TokenValidationParameters = new TokenValidationParameters
                 {
-                    o.SaveToken = true;
-                    o.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuerSigningKey = true,
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("JshgdgdhdjdhhgFDGDSGfGhtGh1DFEF5cdf7")),
-                        ValidIssuer= "SurveyBasket",
-                        ValidAudiences= new[] { "SurveyBasketUsers" }
-					};
-                });
-			return builder;
+                    ValidateIssuerSigningKey = true,
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.IssuerSigningKey)),
+                    ValidIssuer = settings.ValidIssuer,
+                    ValidAudience = settings.ValidAudiences
+                };
+            });
+    
+            return builder;
 		}
 	}
 }
