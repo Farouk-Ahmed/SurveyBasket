@@ -7,5 +7,7 @@ namespace SurveyBasket.Services
 	public interface IAuthService
 	{
 		Task<AuthResponse> AuthResponseAsync(string Email, string Password, CancellationToken cancellationToken);
+        Task<AuthResponse?> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken);
+        Task<AuthResponse?> RefreshTokenAsync(RefreshRequest request, CancellationToken cancellationToken);
 	}
 }

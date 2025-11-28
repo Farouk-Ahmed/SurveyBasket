@@ -14,14 +14,28 @@ namespace SurveyBasket.Controllers
 		private readonly IAuthService _authService = authService;
         private readonly JwtOptions _options = options.Value;
 
-        [HttpPost]
-        [Route("login")]/*{"email": "faroukola19@gmail.com","password": "Ff#1254"}*/
+        [HttpPost("login")]/*{"email": "faroukola19@gmail.com","password": "Ff#1254"}*/
         [AllowAnonymous]
 		public async Task<IActionResult> Login(AuthRequest request, CancellationToken cancellationToken)
 		{
 			var user = await _authService.AuthResponseAsync(request.Email, request.Password, cancellationToken);
 			return user is null ? BadRequest("Invalid Email or Password. Try again.") : Ok(user);
-		}
+		 }
 
+        [HttpPost("register")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _authService.RegisterAsync(request, cancellationToken);
+            return result is null ? BadRequest("Registration failed. Check your data or try a different username/email.") : Ok(result);
+        }
+
+        [HttpPost("refresh")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Refresh(RefreshRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _authService.RefreshTokenAsync(request, cancellationToken);
+            return result is null ? BadRequest("Invalid token or refresh token.") : Ok(result);
+        }
 	}
 }

@@ -42,12 +42,12 @@ namespace SurveyBasket.Controllers
         public async Task<IActionResult> Add([FromBody] PollReuestq request, CancellationToken cancellationToken)
         {
             var newpool = await _poll_service.AddAsync(request.Adapt<Poll>(), cancellationToken);
-            return CreatedAtAction(nameof(GetPolls), new { id = newpool.Id }, newpool);
+            return CreatedAtAction(nameof(GetPolls), new { id = newpool.Id }, newpool.Adapt<pollResponse>());
         }
 
         [HttpPut("id")]
      
-        public async Task<IActionResult> UpDate([FromForm] PollReuestq request, int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> UpDate([FromBody] PollReuestq request, int id, CancellationToken cancellationToken)
         {
             var currentPoll = await _poll_service.UpDateAsync(request.Adapt<Poll>(), id, cancellationToken);
             if (!currentPoll)
@@ -67,10 +67,18 @@ namespace SurveyBasket.Controllers
         [HttpPut("{id}ToggelPublish")]
         public async Task<IActionResult> TogglePublish(int id, CancellationToken cancellationToken)
         {
-            var boll = await _poll_service.TogglePublishAsync(id, cancellationToken);
-            if (!boll)
+            var changed = await _poll_service.TogglePublishAsync(id, cancellationToken);
+            if (!changed)
                 return NotFound();
-            return NoContent();
+
+            // retrieve updated poll to show the new value
+            var updated = await _poll_service.GetPollByIdAsync(id, cancellationToken);
+            if (updated is null)
+                return Ok("Change ok, but failed to retrieve updated state.");
+
+            var isPublished = updated.IsPublished;
+            var message = $"Poll publish state changed to: {isPublished} ({(isPublished ? "Published" : "Unpublished")})";
+            return Ok(message);
         }
     }
 }

@@ -7,7 +7,7 @@ namespace SurveyBasket.Contract.Poll.Validators
         public CreatepollRequestValidator()
         {
             RuleFor(x => x.Title)
-                .NotEmpty().WithMessage("Title is required.").Length(10, 20).WithMessage("Title must be between 10 and 20 characters."); 
+                .NotEmpty().WithMessage("Title is required.").Length(5, 20).WithMessage("Title must be between 5 and 20 characters."); 
 
             RuleFor(x => x.Summray).NotEmpty().WithMessage("Description is required.");
             RuleFor(x => x.StartsAt).NotEmpty().
