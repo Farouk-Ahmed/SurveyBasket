@@ -7,6 +7,8 @@ using System.Security.Cryptography;
 using System.Text;
 using SurveyBasket.Services.Authntchan;
 using System.IdentityModel.Tokens.Jwt;
+using SurveyBasket.Abstractions;
+using SurveyBasket.Errors;
 
 namespace SurveyBasket.Services
 {
@@ -21,16 +23,16 @@ namespace SurveyBasket.Services
             this._tokenProveder = _tokenProveder;
         }
 
-        public async Task<AuthResponse> AuthResponseAsync(string Email, string Password, CancellationToken cancellationToken)
+        public async Task<Result<AuthResponse>> AuthResponseAsync(string Email, string Password, CancellationToken cancellationToken)
         {
             //check is User Found
             var user = await _userManager.FindByEmailAsync(Email);
             if (user == null)
-                return null;
+                return Result.Failure<AuthResponse> (UserErrors.invalidCredentials);
             //check is password valid
-            var passseordValid = await _userManager.CheckPasswordAsync(user, Password);
-            if (!passseordValid)
-                return null;
+            var passworddValid = await _userManager.CheckPasswordAsync(user, Password);
+            if (!passworddValid)
+                return Result.Failure<AuthResponse>(UserErrors.invalidCredentials);
 
             // generate new refresh token on login
             var refreshToken = new RefrechTokens
@@ -43,7 +45,8 @@ namespace SurveyBasket.Services
             await _userManager.UpdateAsync(user);
 
             var (token, ExpireIn) = _tokenProveder.GenerateToken(user);
-            return new AuthResponse(user.Id, user.Email, user.FirstName, user.LastName, token, ExpireIn, refreshToken.Token);
+            var authResponse = new AuthResponse(user.Id, user.Email, user.FirstName, user.LastName, token, ExpireIn, refreshToken.Token);
+            return Result.Success(authResponse);
         }
 
         public async Task<AuthResponse?> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken)

@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SurveyBasket.Abstractions;
 using SurveyBasket.Contract.Poll.Request;
 using SurveyBasket.Contract.Poll.Response;
+using static MassTransit.ValidationResultExtensions;
 
 namespace SurveyBasket.Controllers
 {
@@ -29,11 +31,8 @@ namespace SurveyBasket.Controllers
         [Route("{id}")]
         public async Task<IActionResult> GetbyIDAsync(int id, CancellationToken cancellationToken)
         {
-            var pool = await _poll_service.GetPollByIdAsync(id, cancellationToken);
-            if (pool is null)
-                return NotFound();
-            var response = pool.Adapt<pollResponse>();
-            return Ok(response);
+            var result = await _poll_service.GetPollByIdAsync(id, cancellationToken);
+            return result.IsSuccess ? Ok(result.Value) : NotFound(result.Error);
         }
 
         [HttpPost]
@@ -46,13 +45,11 @@ namespace SurveyBasket.Controllers
         }
 
         [HttpPut("id")]
-     
+
         public async Task<IActionResult> UpDate([FromBody] PollReuestq request, int id, CancellationToken cancellationToken)
         {
-            var currentPoll = await _poll_service.UpDateAsync(request.Adapt<Poll>(), id, cancellationToken);
-            if (!currentPoll)
-                return NotFound();
-            return NoContent();
+            var Ruselt = await _poll_service.UpDateAsync(request, id, cancellationToken);
+                return Ruselt.IsSuccess ? NoContent() : NotFound(Ruselt.Error);
         }
 
         [HttpDelete("{id}")]
@@ -64,21 +61,12 @@ namespace SurveyBasket.Controllers
             return NoContent();
         }
 
-        [HttpPut("{id}ToggelPublish")]
+        [HttpPut("{id}")]
         public async Task<IActionResult> TogglePublish(int id, CancellationToken cancellationToken)
         {
-            var changed = await _poll_service.TogglePublishAsync(id, cancellationToken);
-            if (!changed)
-                return NotFound();
+            var Ruselt = await _poll_service.TogglePublishAsync(id, cancellationToken);
+            return Ruselt.IsSuccess ? NoContent() : NotFound(Ruselt.Error);
 
-            // retrieve updated poll to show the new value
-            var updated = await _poll_service.GetPollByIdAsync(id, cancellationToken);
-            if (updated is null)
-                return Ok("Change ok, but failed to retrieve updated state.");
-
-            var isPublished = updated.IsPublished;
-            var message = $"Poll publish state changed to: {isPublished} ({(isPublished ? "Published" : "Unpublished")})";
-            return Ok(message);
         }
     }
 }

@@ -16,11 +16,12 @@ namespace SurveyBasket.Controllers
 
         [HttpPost("login")]/*{"email": "faroukola19@gmail.com","password": "Ff#1254"}*/
         [AllowAnonymous]
-		public async Task<IActionResult> Login(AuthRequest request, CancellationToken cancellationToken)
+		public async Task<IActionResult> LoginAsync(AuthRequest request, CancellationToken cancellationToken)
 		{
-			var user = await _authService.AuthResponseAsync(request.Email, request.Password, cancellationToken);
-			return user is null ? BadRequest("Invalid Email or Password. Try again.") : Ok(user);
-		 }
+			var authResult = await _authService.AuthResponseAsync(request.Email, request.Password, cancellationToken);
+			return authResult.IsSuccess ? Ok(authResult.Value) : BadRequest(authResult.Error);
+
+        }
 
         [HttpPost("register")]
         [AllowAnonymous]
