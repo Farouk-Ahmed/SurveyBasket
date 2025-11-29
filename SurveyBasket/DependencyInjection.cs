@@ -25,6 +25,15 @@ namespace SurveyBasket
             // Add services to the container.
 
             builder.AddControllers();
+            var AllowAOrigins = configuration.GetSection("AllowAOrigin").Get<string[]>();
+            builder.AddCors(option=>option.AddPolicy("AllowAll",policy=>
+            {
+                policy
+                     // .AllowAnyOrigin()
+                      .AllowAnyMethod()
+                      .AllowAnyHeader()
+                 .WithOrigins(AllowAOrigins!);
+            }));
 
             builder
                 .AddSwaggeeConf()
