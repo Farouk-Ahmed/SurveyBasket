@@ -10,5 +10,6 @@ namespace SurveyBasket.Services
         Task<Result<AuthResponse>> AuthResponseAsync(string Email, string Password, CancellationToken cancellationToken);
         Task<AuthResponse?> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken);
         Task<AuthResponse?> RefreshTokenAsync(RefreshRequest request, CancellationToken cancellationToken);
+        Task<Result<AuthResponse>> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken);
 	}
 }

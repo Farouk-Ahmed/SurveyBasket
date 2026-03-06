@@ -8,7 +8,9 @@
         public bool IsPublished { get; set; }
         public DateTime StartsAt { get; set; } = DateTime.Now;
         public DateTime EndsAt { get; set; } = DateTime.Now;
-     
+
+        // Navigation
+        public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
 
     }
 }

@@ -3,13 +3,12 @@
 	public record AuthResponse
 		(
 		string Id,
-		string ?Email,
+		string? Email,
 		string FirstName,
 		string LastName,
 		string Token,
 		int ExpireIn,
-		string RefreshToken
-
+		string RefreshToken,
+		IList<string> Roles
 		);
-	
 }

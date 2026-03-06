@@ -2,9 +2,7 @@
 using SurveyBasket.Contract.Auth.Response;
 using SurveyBasket.Contract.Auth.Request;
 using SurveyBasket.Entities;
-using MassTransit;
 using System.Security.Cryptography;
-using System.Text;
 using SurveyBasket.Services.Authntchan;
 using System.IdentityModel.Tokens.Jwt;
 using SurveyBasket.Abstractions;
@@ -17,24 +15,26 @@ namespace SurveyBasket.Services
         private readonly UserManager<AppUser> _userManager;
         private readonly ITokenProvedr _tokenProveder;
 
-        public AuthService(UserManager<AppUser> userManager, ITokenProvedr _tokenProveder)
+        public AuthService(UserManager<AppUser> userManager, ITokenProvedr tokenProveder)
         {
             _userManager = userManager;
-            this._tokenProveder = _tokenProveder;
+            _tokenProveder = tokenProveder;
         }
 
         public async Task<Result<AuthResponse>> AuthResponseAsync(string Email, string Password, CancellationToken cancellationToken)
         {
-            //check is User Found
             var user = await _userManager.FindByEmailAsync(Email);
             if (user == null)
-                return Result.Failure<AuthResponse> (UserErrors.invalidCredentials);
-            //check is password valid
-            var passworddValid = await _userManager.CheckPasswordAsync(user, Password);
-            if (!passworddValid)
                 return Result.Failure<AuthResponse>(UserErrors.invalidCredentials);
 
-            // generate new refresh token on login
+            var passwordValid = await _userManager.CheckPasswordAsync(user, Password);
+            if (!passwordValid)
+                return Result.Failure<AuthResponse>(UserErrors.invalidCredentials);
+
+            // Get user roles
+            var roles = await _userManager.GetRolesAsync(user);
+
+            // Generate refresh token
             var refreshToken = new RefrechTokens
             {
                 Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
@@ -44,8 +44,8 @@ namespace SurveyBasket.Services
             user.RefrechTokens.Add(refreshToken);
             await _userManager.UpdateAsync(user);
 
-            var (token, ExpireIn) = _tokenProveder.GenerateToken(user);
-            var authResponse = new AuthResponse(user.Id, user.Email, user.FirstName, user.LastName, token, ExpireIn, refreshToken.Token);
+            var (token, ExpireIn) = _tokenProveder.GenerateToken(user, roles);
+            var authResponse = new AuthResponse(user.Id, user.Email, user.FirstName, user.LastName, token, ExpireIn, refreshToken.Token, roles);
             return Result.Success(authResponse);
         }
 
@@ -62,7 +62,11 @@ namespace SurveyBasket.Services
             if (!result.Succeeded)
                 return null;
 
-            // create refresh token and add to user
+            // Assign default User role
+            await _userManager.AddToRoleAsync(user, DefaultRoles.User);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            // Create refresh token
             var refreshToken = new RefrechTokens
             {
                 Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
@@ -72,13 +76,12 @@ namespace SurveyBasket.Services
             user.RefrechTokens.Add(refreshToken);
             await _userManager.UpdateAsync(user);
 
-            var (token, ExpireIn) = _tokenProveder.GenerateToken(user);
-            return new AuthResponse(user.Id, user.Email, user.FirstName, user.LastName, token, ExpireIn, refreshToken.Token);
+            var (token, ExpireIn) = _tokenProveder.GenerateToken(user, roles);
+            return new AuthResponse(user.Id, user.Email, user.FirstName, user.LastName, token, ExpireIn, refreshToken.Token, roles);
         }
 
         public async Task<AuthResponse?> RefreshTokenAsync(RefreshRequest request, CancellationToken cancellationToken)
         {
-            // validate incoming access token format
             var handler = new JwtSecurityTokenHandler();
             JwtSecurityToken jwt;
             try
@@ -98,15 +101,14 @@ namespace SurveyBasket.Services
             if (user == null)
                 return null;
 
-            // find matching refresh token
             var existing = user.RefrechTokens.FirstOrDefault(rt => rt.Token == request.RefreshToken);
             if (existing == null || !existing.IsActive)
                 return null;
 
-            // revoke the old token
+            // Revoke old token
             existing.RevokeOn = DateTime.UtcNow;
 
-            // create and add new refresh token
+            // Create new refresh token
             var newRefresh = new RefrechTokens
             {
                 Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
@@ -114,11 +116,50 @@ namespace SurveyBasket.Services
                 CreeatedOn = DateTime.UtcNow
             };
             user.RefrechTokens.Add(newRefresh);
-
             await _userManager.UpdateAsync(user);
 
-            var (token, ExpiresIn) = _tokenProveder.GenerateToken(user);
-            return new AuthResponse(user.Id, user.Email, user.FirstName, user.LastName, token, ExpiresIn, newRefresh.Token);
+            // Get user roles
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var (token, ExpiresIn) = _tokenProveder.GenerateToken(user, roles);
+            return new AuthResponse(user.Id, user.Email, user.FirstName, user.LastName, token, ExpiresIn, newRefresh.Token, roles);
+        }
+
+        public async Task<Result<AuthResponse>> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken)
+        {
+            // Validate role
+            if (request.Role != DefaultRoles.Admin && request.Role != DefaultRoles.User)
+                return Result.Failure<AuthResponse>(UserErrors.InvalidRole);
+
+            var user = new AppUser
+            {
+                UserName = request.UserName,
+                Email = request.Email,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                EmailConfirmed = true
+            };
+
+            var result = await _userManager.CreateAsync(user, request.Password);
+            if (!result.Succeeded)
+                return Result.Failure<AuthResponse>(UserErrors.RegistrationFailed);
+
+            // Assign the specified role
+            await _userManager.AddToRoleAsync(user, request.Role);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            // Create refresh token
+            var refreshToken = new RefrechTokens
+            {
+                Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
+                ExpirationOn = DateTime.UtcNow.AddDays(7),
+                CreeatedOn = DateTime.UtcNow
+            };
+            user.RefrechTokens.Add(refreshToken);
+            await _userManager.UpdateAsync(user);
+
+            var (token, ExpireIn) = _tokenProveder.GenerateToken(user, roles);
+            return Result.Success(new AuthResponse(user.Id, user.Email, user.FirstName, user.LastName, token, ExpireIn, refreshToken.Token, roles));
         }
     }
 }

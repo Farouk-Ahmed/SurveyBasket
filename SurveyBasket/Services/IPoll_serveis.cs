@@ -8,7 +8,7 @@ namespace SurveyBasket.Services
         Task<Result<pollResponse>> GetPollByIdAsync(int id,CancellationToken cancellationToken);
         Task <Poll> AddAsync(Poll poll,CancellationToken cancellationToken);
         Task<Result>  UpDateAsync(PollReuestq poll, int id,CancellationToken cancellationToken=default);
-        Task<bool> DeleteAsync(int id ,CancellationToken cancellationToken);
+        Task<bool> DeleteAsync(int id, string? reason = null, CancellationToken cancellationToken = default);
         Task<Result> TogglePublishAsync(int id, CancellationToken cancellationToken);
 
     }

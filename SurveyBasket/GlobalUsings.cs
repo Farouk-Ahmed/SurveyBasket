@@ -8,6 +8,7 @@ global using SurveyBasket.Contract.Poll.Response;
 global using FluentValidation;
 global using Microsoft.EntityFrameworkCore;
 global using SurveyBasket.Persitence.EntitiesConfigurations;
-
+global using SurveyBasket.Contract.Dashboard.Request;
+global using SurveyBasket.Contract.Dashboard.Response;
 
 

@@ -1,12 +1,14 @@
-﻿namespace SurveyBasket.Contract.Poll.Response
+﻿using SurveyBasket.Contract.Files.Response;
+
+namespace SurveyBasket.Contract.Poll.Response
 {
     public record pollResponse (
          int Id,
-          string Title,
-            string Note ,
-            bool IsPublished,
-            DateTime StartsAt,
-            DateTime EndsAt 
+           string Title,
+             string Note ,
+             bool IsPublished,
+             DateTime StartsAt,
+             DateTime EndsAt,
+             IEnumerable<FileResponse> Images
     );
-    
 }

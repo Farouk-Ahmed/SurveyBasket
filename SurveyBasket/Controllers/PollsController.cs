@@ -23,7 +23,16 @@ namespace SurveyBasket.Controllers
         public async Task<IActionResult> GetPolls(CancellationToken cancellationToken)
         {
             var polls = await _poll_service.GetPollsAsync(cancellationToken);
-            var res = polls.Adapt<IEnumerable<pollResponse>>();
+            var res = polls.Select(p => new pollResponse(
+                p.Id, p.Title, p.Summray, p.IsPublished, p.StartsAt, p.EndsAt,
+                p.Attachments.Select(a => new Contract.Files.Response.FileResponse(
+                    a.Id, a.FileName,
+                    $"{Request.Scheme}://{Request.Host}/{a.StoredPath}",
+                    a.ContentType, a.FileSize,
+                    $"{a.UploadedBy?.FirstName} {a.UploadedBy?.LastName}".Trim(),
+                    a.UploadedById, a.UploadedOn, a.PollId
+                ))
+            ));
             return Ok(res);
         }
 
@@ -53,9 +62,10 @@ namespace SurveyBasket.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Deleted(int id, CancellationToken cancellationToken)
+        [Authorize(Roles = DefaultRoles.Admin)]
+        public async Task<IActionResult> Deleted(int id, [FromQuery] string? reason, CancellationToken cancellationToken)
         {
-            var curantpoll = await _poll_service.DeleteAsync(id, cancellationToken);
+            var curantpoll = await _poll_service.DeleteAsync(id, reason, cancellationToken);
             if (!curantpoll)
                 return NotFound();
             return NoContent();

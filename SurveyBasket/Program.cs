@@ -1,19 +1,18 @@
 using Microsoft.OpenApi.Models;
 using SurveyBasket;
-using SurveyBasket.NewFolder; // Add this using directive
+using SurveyBasket.NewFolder;
 using Microsoft.AspNetCore.Identity;
 using SurveyBasket.Entities;
+using SurveyBasket.Persitence;
 
 var builder = WebApplication.CreateBuilder(args);
 // Call the extension method to register services
 builder.Services.AddSurveyBasket(builder.Configuration);
 
-
-
 var app = builder.Build();
 
-// Register the mapping configuration as a singleton
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+// Seed roles and default admin user
+await DataSeeder.SeedAsync(app.Services);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -27,8 +26,10 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseStaticFiles();
 app.UseHttpsRedirection();
-   app.UseCors("AllowAll");
+app.UseCors("AllowAll");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

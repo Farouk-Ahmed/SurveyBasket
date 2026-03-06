@@ -48,7 +48,9 @@ namespace SurveyBasket
             // Register the Poll_serviceis as a service
             builder.AddScoped<IPoll_serveis, Poll_serviceis>();
             builder.AddScoped<IAuthService, AuthService>();
-         
+            builder.AddScoped<IDashboardService, DashboardService>();
+            builder.AddScoped<IFileService, FileService>();
+            builder.AddHttpContextAccessor();
 
             return builder;
         }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SurveyBasket.NewFolder;
 
@@ -11,9 +12,11 @@ using SurveyBasket.NewFolder;
 namespace SurveyBasket.Migrations
 {
     [DbContext(typeof(AppDBContext))]
-    partial class AppDBContextModelSnapshot : ModelSnapshot
+    [Migration("20260306000833_AddAttachments")]
+    partial class AddAttachments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -251,9 +254,6 @@ namespace SurveyBasket.Migrations
                     b.Property<long>("FileSize")
                         .HasColumnType("bigint");
 
-                    b.Property<int?>("PollId")
-                        .HasColumnType("int");
-
                     b.Property<string>("StoredPath")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -267,8 +267,6 @@ namespace SurveyBasket.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("PollId");
 
                     b.HasIndex("UploadedById");
 
@@ -472,18 +470,11 @@ namespace SurveyBasket.Migrations
 
             modelBuilder.Entity("SurveyBasket.Entities.Attachment", b =>
                 {
-                    b.HasOne("SurveyBasket.Entities.Poll", "Poll")
-                        .WithMany("Attachments")
-                        .HasForeignKey("PollId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("SurveyBasket.Entities.AppUser", "UploadedBy")
                         .WithMany()
                         .HasForeignKey("UploadedById")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Poll");
 
                     b.Navigation("UploadedBy");
                 });
@@ -528,11 +519,6 @@ namespace SurveyBasket.Migrations
                     b.Navigation("DeletedBy");
 
                     b.Navigation("UpdatedBy");
-                });
-
-            modelBuilder.Entity("SurveyBasket.Entities.Poll", b =>
-                {
-                    b.Navigation("Attachments");
                 });
 #pragma warning restore 612, 618
         }

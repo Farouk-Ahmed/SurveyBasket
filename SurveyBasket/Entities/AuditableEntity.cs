@@ -11,5 +11,12 @@
 
         public AppUser CreatedBy { get; set; } = default!;
         public AppUser? UpdatedBy { get; set; }
+
+        // Soft-delete fields
+        public bool IsDeleted { get; set; }
+        public string? DeletedById { get; set; }
+        public DateTime? DeletedOn { get; set; }
+        public string? DeletionReason { get; set; }
+        public AppUser? DeletedBy { get; set; }
     }
 }
