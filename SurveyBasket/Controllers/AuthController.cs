@@ -27,14 +27,14 @@ namespace SurveyBasket.Controllers
         }
 
         /// <summary>
-        /// Register a new user (assigned User role by default)
+        /// Register a new user (email + password + confirm password)
         /// </summary>
         [HttpPost("register")]
         [AllowAnonymous]
         public async Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken)
         {
             var result = await _authService.RegisterAsync(request, cancellationToken);
-            return result is null ? BadRequest("Registration failed. Check your data or try a different username/email.") : Ok(result);
+            return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
         }
 
         /// <summary>
@@ -46,17 +46,6 @@ namespace SurveyBasket.Controllers
         {
             var result = await _authService.RefreshTokenAsync(request, cancellationToken);
             return result is null ? BadRequest("Invalid token or refresh token.") : Ok(result);
-        }
-
-        /// <summary>
-        /// Create a new user with a specific role (Admin only)
-        /// </summary>
-        [HttpPost("create-user")]
-        [Authorize(Roles = DefaultRoles.Admin)]
-        public async Task<IActionResult> CreateUser(CreateUserRequest request, CancellationToken cancellationToken)
-        {
-            var result = await _authService.CreateUserAsync(request, cancellationToken);
-            return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
         }
 	}
 }

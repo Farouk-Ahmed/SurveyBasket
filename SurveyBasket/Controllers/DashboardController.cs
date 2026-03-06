@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SurveyBasket.Abstractions;
+using SurveyBasket.Contract.Auth.Request;
 using SurveyBasket.Contract.Dashboard.Request;
 using SurveyBasket.Services;
 
@@ -12,10 +13,22 @@ namespace SurveyBasket.Controllers
     public class DashboardController : ControllerBase
     {
         private readonly IDashboardService _dashboardService;
+        private readonly IAuthService _authService;
 
-        public DashboardController(IDashboardService dashboardService)
+        public DashboardController(IDashboardService dashboardService, IAuthService authService)
         {
             _dashboardService = dashboardService;
+            _authService = authService;
+        }
+
+        /// <summary>
+        /// Create a new user with a specific role (Admin only)
+        /// </summary>
+        [HttpPost("create-user")]
+        public async Task<IActionResult> CreateUser(CreateUserRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _authService.CreateUserAsync(request, cancellationToken);
+            return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
         }
 
         /// <summary>

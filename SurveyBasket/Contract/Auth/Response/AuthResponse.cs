@@ -8,7 +8,6 @@
 		string LastName,
 		string Token,
 		int ExpireIn,
-		string RefreshToken,
-		IList<string> Roles
+		string RefreshToken
 		);
 }

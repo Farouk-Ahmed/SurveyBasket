@@ -52,6 +52,10 @@ namespace SurveyBasket
             builder.AddScoped<IFileService, FileService>();
             builder.AddHttpContextAccessor();
 
+            // Email
+            builder.Configure<Settings.EmailSettings>(configuration.GetSection(Settings.EmailSettings.SectionName));
+            builder.AddScoped<IEmailService, EmailService>();
+
             return builder;
         }
         private static IServiceCollection AddSwaggeeConf(this IServiceCollection builder)
