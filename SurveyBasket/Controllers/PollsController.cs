@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SurveyBasket.Abstractions;
 using SurveyBasket.Contract.Poll.Request;
@@ -62,7 +62,6 @@ namespace SurveyBasket.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = DefaultRoles.Admin)]
         public async Task<IActionResult> Deleted(int id, [FromQuery] string? reason, CancellationToken cancellationToken)
         {
             var curantpoll = await _poll_service.DeleteAsync(id, reason, cancellationToken);

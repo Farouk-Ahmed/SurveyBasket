@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using SurveyBasket.Contract.Auth.Response;
 using SurveyBasket.Contract.Auth.Request;
 using SurveyBasket.Entities;
@@ -62,7 +62,10 @@ namespace SurveyBasket.Services
             };
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
-                return Result.Failure<AuthResponse>(UserErrors.RegistrationFailed);
+            {
+                var errors = string.Join(" ", result.Errors.Select(e => e.Description));
+                return Result.Failure<AuthResponse>(new Error("User.RegistrationFailed", errors));
+            }
 
             // Assign default User role
             await _userManager.AddToRoleAsync(user, DefaultRoles.User);
@@ -148,7 +151,10 @@ namespace SurveyBasket.Services
 
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
-                return Result.Failure<CreateUserResponse>(UserErrors.RegistrationFailed);
+            {
+                var errors = string.Join(" ", result.Errors.Select(e => e.Description));
+                return Result.Failure<CreateUserResponse>(new Error("User.RegistrationFailed", errors));
+            }
 
             // Assign the specified role
             await _userManager.AddToRoleAsync(user, request.Role);

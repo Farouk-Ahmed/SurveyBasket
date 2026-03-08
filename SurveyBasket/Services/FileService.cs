@@ -40,9 +40,36 @@ namespace SurveyBasket.Services
             if (string.IsNullOrEmpty(currentUserId))
                 return Result.Failure<FileResponse>(FileErrors.Unauthorized);
 
-            // Build folder path: wwwroot/uploads/{userId}/{date}/
-            var dateFolder = DateTime.UtcNow.ToString("yyyy-MM-dd");
-            var relativePath = Path.Combine("uploads", currentUserId, dateFolder);
+            // Determine folder path
+            string relativePath = string.Empty;
+
+            if (pollId.HasValue)
+            {
+                // Check if this poll already has images
+                var existingAttachment = await _dbContext.Attachments
+                    .Where(a => a.PollId == pollId.Value && !string.IsNullOrEmpty(a.StoredPath))
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (existingAttachment != null)
+                {
+                    // Reuse the existing folder for this poll
+                    // StoredPath looks like "uploads/userId/folder/file.ext"
+                    relativePath = Path.GetDirectoryName(existingAttachment.StoredPath) ?? string.Empty;
+                }
+                else
+                {
+                    // No previous images -> Create a folder with current date and time (hours and minutes)
+                    var timestampStr = DateTime.UtcNow.ToString("yyyy-MM-dd_HH-mm");
+                    relativePath = Path.Combine("uploads", currentUserId, timestampStr);
+                }
+            }
+            else
+            {
+                // No poll -> standard date fallback
+                relativePath = Path.Combine("uploads", currentUserId, DateTime.UtcNow.ToString("yyyy-MM-dd"));
+            }
+
+            relativePath = relativePath.Replace("\\", "/");
             var absolutePath = Path.Combine(_environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), relativePath);
 
             // Create directory if not exists

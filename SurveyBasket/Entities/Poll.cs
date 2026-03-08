@@ -1,4 +1,4 @@
-﻿namespace SurveyBasket.Entities
+namespace SurveyBasket.Entities
 {
 	public class Poll : AuditableEntity
     {
@@ -11,6 +11,9 @@
 
         // Navigation
         public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
+
+        public int ClientId { get; set; }
+        public Client Client { get; set; } = default!;
 
     }
 }

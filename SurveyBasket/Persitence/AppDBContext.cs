@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SurveyBasket.Entities;
 using System.Security.Claims;
+using SurveyBasket.Persitence.EntitiesConfigurations;
 
 namespace SurveyBasket.NewFolder
 {
@@ -15,6 +17,7 @@ namespace SurveyBasket.NewFolder
         public DbSet<Poll> Polls { get; set; } = null!;
         public DbSet<AuditLog> AuditLogs { get; set; } = null!;
         public DbSet<Attachment> Attachments { get; set; } = null!;
+        public DbSet<Client> Clients { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -23,6 +26,7 @@ namespace SurveyBasket.NewFolder
             modelBuilder.ApplyConfiguration(new UserConfiguration());
             modelBuilder.ApplyConfiguration(new AuditLogConfiguration());
             modelBuilder.ApplyConfiguration(new AttachmentConfiguration());
+            modelBuilder.ApplyConfiguration(new ClientConfiguration());
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

@@ -1,4 +1,4 @@
-﻿
+
 using SurveyBasket.Abstractions;
 using SurveyBasket.Contract.Files.Response;
 using SurveyBasket.Entities;
@@ -21,11 +21,20 @@ namespace SurveyBasket.Services
 
         public async Task<IEnumerable<Poll>> GetPollsAsync(CancellationToken cancellationToken = default)
         {
-            return await _dbContext.Set<Poll>()
+            var currentUserId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var isAdmin = _httpContextAccessor.HttpContext?.User.IsInRole(DefaultRoles.Admin) ?? false;
+
+            var query = _dbContext.Set<Poll>()
                 .Include(p => p.Attachments)
                     .ThenInclude(a => a.UploadedBy)
-                .AsNoTracking()
-                .ToListAsync();
+                .AsNoTracking();
+
+            if (!isAdmin)
+            {
+                query = query.Where(p => p.CreatedById == currentUserId);
+            }
+
+            return await query.ToListAsync(cancellationToken);
         }
 
         public async Task<Result<pollResponse>> GetPollByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -81,6 +90,12 @@ namespace SurveyBasket.Services
         {
             var poll = await _dbContext.Set<Poll>().FindAsync(id, cancellationToken);
             if (poll is null)
+                return false;
+
+            var currentUserId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var isAdmin = _httpContextAccessor.HttpContext?.User.IsInRole(DefaultRoles.Admin) ?? false;
+
+            if (!isAdmin && poll.CreatedById != currentUserId)
                 return false;
 
             // Soft-delete instead of hard-delete

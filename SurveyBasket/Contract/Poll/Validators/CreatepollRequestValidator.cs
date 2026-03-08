@@ -1,4 +1,4 @@
-﻿using SurveyBasket.Contract.Poll.Request;
+using SurveyBasket.Contract.Poll.Request;
 
 namespace SurveyBasket.Contract.Poll.Validators
 {
@@ -10,13 +10,19 @@ namespace SurveyBasket.Contract.Poll.Validators
                 .NotEmpty().WithMessage("Title is required.").Length(5, 20).WithMessage("Title must be between 5 and 20 characters."); 
 
             RuleFor(x => x.Summray).NotEmpty().WithMessage("Description is required.");
-            RuleFor(x => x.StartsAt).NotEmpty().
-				GreaterThanOrEqualTo(DateTime.Today);
-            RuleFor(x => x).Must(HasValidTime).WithName(nameof(PollReuestq.EndsAt)).WithMessage("Start date must be today or later.");
-		}
-        private bool HasValidTime(PollReuestq poll)
+            RuleFor(x => x.StartsAt).NotEmpty()
+                .GreaterThanOrEqualTo(DateTime.Today).WithMessage("Start date cannot be in the past.");
+                
+            RuleFor(x => x).Must(HasValidTimeFrame).WithName(nameof(PollReuestq.EndsAt))
+                .WithMessage("End date must be after Start date and cannot exceed 3 months from the Start date.");
+        }
+
+        private bool HasValidTimeFrame(PollReuestq poll)
         {
-            return  poll.EndsAt>=poll.StartsAt;
+            if (poll.EndsAt < poll.StartsAt) return false;
+            
+            // End date cannot be more than 3 months from start date
+            return poll.EndsAt <= poll.StartsAt.AddMonths(3);
         }
 
     }

@@ -12,5 +12,8 @@ namespace SurveyBasket.Entities
         // Navigation properties
         public Poll Poll { get; set; } = default!;
         public AppUser PerformedBy { get; set; } = default!;
+
+        public int ClientId { get; set; }
+        public Client Client { get; set; } = default!;
     }
 }

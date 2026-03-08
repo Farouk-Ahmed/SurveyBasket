@@ -31,6 +31,11 @@ namespace SurveyBasket.Persitence.EntitiesConfigurations
 
             builder.HasIndex(x => x.PollId);
             builder.HasIndex(x => x.PerformedOn);
+
+            builder.HasOne(a => a.Client)
+                .WithMany(c => c.AuditLogs)
+                .HasForeignKey(a => a.ClientId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
