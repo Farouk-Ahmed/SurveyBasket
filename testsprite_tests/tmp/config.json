@@ -1,0 +1,21 @@
+{
+  "status": "commited",
+  "type": "backend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:7270",
+  "backendAuthType": "basic token",
+  "backendUsername": "admin@surveybasket.com",
+  "backendPassword": "Admin@123",
+  "executionArgs": {
+    "projectName": "SurveyBasket",
+    "projectPath": "f:\\Projects\\API-Deev Cred\\Project\\SurveyBasket",
+    "testIds": [],
+    "additionalInstruction": "",
+    "serverMode": "development",
+    "envs": {
+      "API_KEY": "sk-user-cHhIG-tuSu8waTQpjh36YtxJqrnJsGS8FUmzzJBnTg4Sui035MyNR6A0MrUDsKWr3s1GxqQqkeBq_gYcdzKo0bXf9OOw8nemYINp-VBjsJIlD2F3cOnULqfXvA3lnJ6OxZY"
+    }
+  },
+  "serverPort": 53064,
+  "proxy": "http://9cbf9015-9401-4b44-8a2e-b65b639e32e2:HDkli2erU5LZGWIUc9TV3QCwwYASKxvt@tun.testsprite.com:8080"
+}

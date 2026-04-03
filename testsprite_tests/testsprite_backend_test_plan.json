@@ -1,0 +1,52 @@
+[
+  {
+    "id": "TC001",
+    "title": "post api auth register user registration",
+    "description": "Test user registration with valid data to receive 201 Created and user id. Also test registration with already registered email to receive 400 Bad Request."
+  },
+  {
+    "id": "TC002",
+    "title": "post api auth login user login",
+    "description": "Test user login with valid credentials to receive 200 OK with JWT and refresh token. Test login with incorrect password to receive 401 Unauthorized."
+  },
+  {
+    "id": "TC003",
+    "title": "post api auth refresh token refresh",
+    "description": "Test token refresh with valid refresh token to receive 200 OK with new JWT. Test refresh with invalid or revoked token to receive 401 Unauthorized."
+  },
+  {
+    "id": "TC004",
+    "title": "get api clients me get client profile",
+    "description": "Test fetching current client profile with valid JWT to receive 200 OK with profile data. Test without authorization header to receive 401 Unauthorized."
+  },
+  {
+    "id": "TC005",
+    "title": "put api clients me update client profile",
+    "description": "Test updating client profile with valid JWT and valid payload to receive 200 OK with updated profile. Test with invalid payload to receive 400 Bad Request."
+  },
+  {
+    "id": "TC006",
+    "title": "put api clients me avatar update client avatar",
+    "description": "Test updating client avatar with valid JWT and multipart image to receive 200 OK with avatar URL."
+  },
+  {
+    "id": "TC007",
+    "title": "post api dashboard create user create new user",
+    "description": "Test creating a new user with admin JWT to receive 201 Created with new user id. Test with non-admin JWT to receive 403 Forbidden."
+  },
+  {
+    "id": "TC008",
+    "title": "get api dashboard summary get dashboard summary",
+    "description": "Test retrieving dashboard summary with valid admin JWT to receive 200 OK with summary data. Test with expired JWT to receive 401 Unauthorized."
+  },
+  {
+    "id": "TC009",
+    "title": "get api dashboard audit logs get audit logs",
+    "description": "Test retrieving audit logs with valid admin JWT to receive 200 OK with audit logs."
+  },
+  {
+    "id": "TC010",
+    "title": "get api polls get polls list",
+    "description": "Test retrieving list of polls without authentication to receive 200 OK with polls data."
+  }
+]

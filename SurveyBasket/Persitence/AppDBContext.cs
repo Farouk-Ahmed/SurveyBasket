@@ -34,10 +34,14 @@ namespace SurveyBasket.NewFolder
             var entries = ChangeTracker.Entries<AuditableEntity>();
             foreach (var entityEntry in entries)
             {
-                var currentUserId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+                var currentUserId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (entityEntry.State == EntityState.Added)
                 {
-                    entityEntry.Property(x => x.CreatedById).CurrentValue = currentUserId;
+                    // Only overwrite if the value is not already populated. Useful for Anonymous scenarios like User Registration.
+                    if (string.IsNullOrEmpty((string?)entityEntry.Property(x => x.CreatedById).CurrentValue))
+                    {
+                        entityEntry.Property(x => x.CreatedById).CurrentValue = currentUserId ?? string.Empty;
+                    }
                 }
                 else if (entityEntry.State == EntityState.Modified)
                 {

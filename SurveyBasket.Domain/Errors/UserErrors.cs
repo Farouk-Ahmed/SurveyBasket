@@ -1,0 +1,11 @@
+using SurveyBasket.Domain.Abstractions;
+
+namespace SurveyBasket.Domain.Errors;
+
+public static class UserErrors
+{
+    public static readonly Error InvalidCredentials = new("User.InvalidCredentials", "Invalid Email or Password. Try again.");
+    public static readonly Error UserNotFound = new("User.NotFound", "The user could not be found.");
+    public static readonly Error InvalidRole = new("User.InvalidRole", "Role must be 'Admin' or 'User'.");
+    public static readonly Error RegistrationFailed = new("User.RegistrationFailed", "Registration failed. Check your data or try a different username/email.");
+}

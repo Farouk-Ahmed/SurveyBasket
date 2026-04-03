@@ -10,5 +10,9 @@ namespace SurveyBasket.Services
         Task<Result<DashboardPollResponse>> GetPollDetailsAsync(int pollId, CancellationToken cancellationToken);
         Task<IEnumerable<AuditLogResponse>> GetPollAuditLogAsync(int pollId, CancellationToken cancellationToken);
         Task<IEnumerable<AuditLogResponse>> GetAllAuditLogsAsync(CancellationToken cancellationToken);
+        
+        // Client Management
+        Task<Result<IEnumerable<Contract.Clients.Response.DashboardClientResponse>>> GetClientsAsync(ClientFilterRequest filter, CancellationToken cancellationToken);
+        Task<Result<string>> UpdateClientAvatarAsync(int clientId, Contract.Clients.Request.UpdateClientAvatarRequest request, CancellationToken cancellationToken);
     }
 }

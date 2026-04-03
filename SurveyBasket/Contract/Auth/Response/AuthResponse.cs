@@ -1,4 +1,4 @@
-﻿namespace SurveyBasket.Contract.Auth.Response
+namespace SurveyBasket.Contract.Auth.Response
 {
 	public record AuthResponse
 		(
@@ -8,6 +8,7 @@
 		string LastName,
 		string Token,
 		int ExpireIn,
-		string RefreshToken
+		string RefreshToken,
+		string? ProfilePicturePath
 		);
 }

@@ -1,4 +1,4 @@
-﻿using FluentValidation.AspNetCore;
+using FluentValidation.AspNetCore;
 using MapsterMapper;
 using MassTransit;
 using MassTransit.RabbitMqTransport; // Added for UsingRabbitMq extension
@@ -50,6 +50,7 @@ namespace SurveyBasket
             builder.AddScoped<IAuthService, AuthService>();
             builder.AddScoped<IDashboardService, DashboardService>();
             builder.AddScoped<IFileService, FileService>();
+            builder.AddScoped<IClientService, ClientService>();
             builder.AddHttpContextAccessor();
 
             // Email

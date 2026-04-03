@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using SurveyBasket.Contract.Auth.Request;
@@ -31,7 +31,7 @@ namespace SurveyBasket.Controllers
         /// </summary>
         [HttpPost("register")]
         [AllowAnonymous]
-        public async Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> Register([FromForm] RegisterRequest request, CancellationToken cancellationToken)
         {
             var result = await _authService.RegisterAsync(request, cancellationToken);
             return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);

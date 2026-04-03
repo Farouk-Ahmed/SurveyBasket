@@ -70,5 +70,24 @@ namespace SurveyBasket.Controllers
             var result = await _dashboardService.GetAllAuditLogsAsync(cancellationToken);
             return Ok(result);
         }
+        /// <summary>
+        /// Get all user clients (with support for search by Name, NationalId, Email and pagination)
+        /// </summary>
+        [HttpGet("clients")]
+        public async Task<IActionResult> GetClients([FromQuery] Contract.Dashboard.Request.ClientFilterRequest filter, CancellationToken cancellationToken)
+        {
+            var result = await _dashboardService.GetClientsAsync(filter, cancellationToken);
+            return Ok(result.Value);
+        }
+
+        /// <summary>
+        /// Override a client's avatar (Admin only)
+        /// </summary>
+        [HttpPut("clients/{clientId}/avatar")]
+        public async Task<IActionResult> UpdateClientAvatar(int clientId, [FromForm] Contract.Clients.Request.UpdateClientAvatarRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _dashboardService.UpdateClientAvatarAsync(clientId, request, cancellationToken);
+            return result.IsSuccess ? Ok(new { Url = result.Value }) : BadRequest(result.Error);
+        }
     }
 }

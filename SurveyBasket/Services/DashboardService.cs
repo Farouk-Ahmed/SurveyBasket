@@ -12,11 +12,13 @@ namespace SurveyBasket.Services
     {
         private readonly AppDBContext _dbContext;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IWebHostEnvironment _environment;
 
-        public DashboardService(AppDBContext dbContext, IHttpContextAccessor httpContextAccessor)
+        public DashboardService(AppDBContext dbContext, IHttpContextAccessor httpContextAccessor, IWebHostEnvironment environment)
         {
             _dbContext = dbContext;
             _httpContextAccessor = httpContextAccessor;
+            _environment = environment;
         }
 
         public async Task<DashboardSummaryResponse> GetDashboardSummaryAsync(DashboardFilterRequest filter, CancellationToken cancellationToken)
@@ -165,6 +167,102 @@ namespace SurveyBasket.Services
                 $"{a.UploadedBy?.FirstName} {a.UploadedBy?.LastName}".Trim(),
                 a.UploadedById, a.UploadedOn, a.PollId
             ));
+        }
+
+        public async Task<Result<IEnumerable<Contract.Clients.Response.DashboardClientResponse>>> GetClientsAsync(ClientFilterRequest filter, CancellationToken cancellationToken)
+        {
+            IQueryable<Client> query = _dbContext.Clients
+                .Include(c => c.AppUser)
+                .AsNoTracking();
+
+            // Apply search
+            if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
+            {
+                var term = filter.SearchTerm.Trim().ToLower();
+                query = query.Where(c => 
+                    c.FirstName.ToLower().Contains(term) || 
+                    c.LastName.ToLower().Contains(term) ||
+                    (c.FirstName + " " + c.LastName).ToLower().Contains(term) ||
+                    c.NationalId.Contains(term));
+            }
+            
+            if (!string.IsNullOrWhiteSpace(filter.Email))
+            {
+                var emailTerm = filter.Email.Trim().ToLower();
+                query = query.Where(c => c.Email.ToLower().Contains(emailTerm));
+            }
+
+            // Apply Sort
+            query = (filter.SortBy?.ToLower(), filter.SortDirection?.ToLower()) switch
+            {
+                ("name", "desc") => query.OrderByDescending(c => c.FirstName).ThenByDescending(c => c.LastName),
+                ("name", _) => query.OrderBy(c => c.FirstName).ThenBy(c => c.LastName),
+                ("registeredon", "desc") => query.OrderByDescending(c => c.CreatedOn),
+                ("registeredon", _) => query.OrderBy(c => c.CreatedOn),
+                ("email", "desc") => query.OrderByDescending(c => c.Email),
+                ("email", _) => query.OrderBy(c => c.Email),
+                _ => query.OrderByDescending(c => c.CreatedOn)
+            };
+
+            // Apply Pagination
+            var skip = (filter.PageNumber - 1) * filter.PageSize;
+            var clients = await query.Skip(skip).Take(filter.PageSize).ToListAsync(cancellationToken);
+
+            var request = _httpContextAccessor.HttpContext?.Request;
+            var baseUrl = $"{request?.Scheme}://{request?.Host}/";
+
+            var response = clients.Select(c => new Contract.Clients.Response.DashboardClientResponse(
+                c.Id, c.FirstName, c.LastName, c.NationalId, c.Email, c.MainMobile, c.AlternateMobile,
+                c.MainAddress, c.AlternateAddress, c.Gender, c.DateOfBirth,
+                !string.IsNullOrEmpty(c.ProfilePicturePath) ? baseUrl + c.ProfilePicturePath : null,
+                c.AppUserId, c.CreatedOn
+            ));
+
+            return Result.Success(response);
+        }
+
+        public async Task<Result<string>> UpdateClientAvatarAsync(int clientId, Contract.Clients.Request.UpdateClientAvatarRequest request, CancellationToken cancellationToken)
+        {
+            var client = await _dbContext.Clients.FirstOrDefaultAsync(c => c.Id == clientId, cancellationToken);
+            if (client is null)
+                return Result.Failure<string>(UserErrors.UserNotFound);
+
+            if (request.ProfilePicture is null || request.ProfilePicture.Length == 0)
+                return Result.Failure<string>(new Error("Avatar.Invalid", "Please provide a valid image file."));
+
+            var extension = Path.GetExtension(request.ProfilePicture.FileName).ToLower();
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+
+            if (!allowedExtensions.Contains(extension) || request.ProfilePicture.Length > 5 * 1024 * 1024)
+                return Result.Failure<string>(new Error("Avatar.InvalidMetadata", "Invalid image format or size exceeds 5MB."));
+
+            var relativePath = Path.Combine("User profile pictures", client.Id.ToString());
+            var absolutePath = Path.Combine(_environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), relativePath);
+
+            Directory.CreateDirectory(absolutePath);
+
+            var storedFileName = $"{Guid.NewGuid()}{extension}";
+            var filePath = Path.Combine(absolutePath, storedFileName);
+            var relativeFilePath = Path.Combine(relativePath, storedFileName).Replace("\\", "/");
+
+            if (!string.IsNullOrEmpty(client.ProfilePicturePath))
+            {
+                var oldFilePath = Path.Combine(_environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), client.ProfilePicturePath).Replace("/", "\\");
+                if (File.Exists(oldFilePath)) File.Delete(oldFilePath);
+            }
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await request.ProfilePicture.CopyToAsync(stream, cancellationToken);
+            }
+
+            client.ProfilePicturePath = relativeFilePath;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            var httpRequest = _httpContextAccessor.HttpContext?.Request;
+            var fullUrl = $"{httpRequest?.Scheme}://{httpRequest?.Host}/{relativeFilePath}";
+
+            return Result.Success(fullUrl);
         }
     }
 }

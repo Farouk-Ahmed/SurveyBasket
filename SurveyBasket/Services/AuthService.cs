@@ -7,6 +7,8 @@ using SurveyBasket.Services.Authntchan;
 using System.IdentityModel.Tokens.Jwt;
 using SurveyBasket.Abstractions;
 using SurveyBasket.Errors;
+using Microsoft.AspNetCore.Hosting;
+using System.IO;
 
 namespace SurveyBasket.Services
 {
@@ -15,12 +17,16 @@ namespace SurveyBasket.Services
         private readonly UserManager<AppUser> _userManager;
         private readonly ITokenProvedr _tokenProveder;
         private readonly IEmailService _emailService;
+        private readonly SurveyBasket.NewFolder.AppDBContext _dbContext;
+        private readonly IWebHostEnvironment _environment;
 
-        public AuthService(UserManager<AppUser> userManager, ITokenProvedr tokenProveder, IEmailService emailService)
+        public AuthService(UserManager<AppUser> userManager, ITokenProvedr tokenProveder, IEmailService emailService, SurveyBasket.NewFolder.AppDBContext dbContext, IWebHostEnvironment environment)
         {
             _userManager = userManager;
             _tokenProveder = tokenProveder;
             _emailService = emailService;
+            _dbContext = dbContext;
+            _environment = environment;
         }
 
         public async Task<Result<AuthResponse>> AuthResponseAsync(string Email, string Password, CancellationToken cancellationToken)
@@ -47,7 +53,11 @@ namespace SurveyBasket.Services
             await _userManager.UpdateAsync(user);
 
             var (token, ExpireIn) = _tokenProveder.GenerateToken(user, roles);
-            var authResponse = new AuthResponse(user.Id, user.Email, user.FirstName, user.LastName, token, ExpireIn, refreshToken.Token);
+            
+            // Get profile picture if user is a client
+            var client = await _dbContext.Clients.FirstOrDefaultAsync(c => c.AppUserId == user.Id, cancellationToken);
+            
+            var authResponse = new AuthResponse(user.Id, user.Email, user.FirstName, user.LastName, token, ExpireIn, refreshToken.Token, client?.ProfilePicturePath);
             return Result.Success(authResponse);
         }
 
@@ -57,14 +67,62 @@ namespace SurveyBasket.Services
             {
                 UserName = request.Email,
                 Email = request.Email,
-                FirstName = string.Empty,
-                LastName = string.Empty
+                FirstName = request.FirstName,
+                LastName = request.LastName
             };
+
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
             {
                 var errors = string.Join(" ", result.Errors.Select(e => e.Description));
                 return Result.Failure<AuthResponse>(new Error("User.RegistrationFailed", errors));
+            }
+
+            // 1. Create the Client Profile
+            var client = new Client
+            {
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                NationalId = request.NationalId,
+                Email = request.Email,
+                MainAddress = request.MainAddress,
+                AlternateAddress = request.AlternateAddress,
+                MainMobile = request.MainMobile,
+                AlternateMobile = request.AlternateMobile,
+                DateOfBirth = request.DateOfBirth,
+                Gender = request.Gender,
+                AppUserId = user.Id,
+                CreatedById = user.Id // Self created
+            };
+
+            await _dbContext.Clients.AddAsync(client, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken); // Generates Client.Id
+
+            // 2. Handle Profile Picture Upload if Provided
+            if (request.ProfilePicture is not null && request.ProfilePicture.Length > 0)
+            {
+                var extension = Path.GetExtension(request.ProfilePicture.FileName).ToLower();
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+                
+                if (allowedExtensions.Contains(extension) && request.ProfilePicture.Length <= 5 * 1024 * 1024)
+                {
+                    var relativePath = Path.Combine("User profile pictures", client.Id.ToString());
+                    var absolutePath = Path.Combine(_environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), relativePath);
+                    
+                    Directory.CreateDirectory(absolutePath);
+
+                    var storedFileName = $"{Guid.NewGuid()}{extension}";
+                    var filePath = Path.Combine(absolutePath, storedFileName);
+                    var relativeFilePath = Path.Combine(relativePath, storedFileName).Replace("\\", "/");
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await request.ProfilePicture.CopyToAsync(stream, cancellationToken);
+                    }
+
+                    client.ProfilePicturePath = relativeFilePath;
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+                }
             }
 
             // Assign default User role
@@ -86,7 +144,7 @@ namespace SurveyBasket.Services
             // Send welcome email (fire and forget — won't block registration)
             _ = _emailService.SendWelcomeEmailAsync(request.Email, cancellationToken);
 
-            return Result.Success(new AuthResponse(user.Id, user.Email, user.FirstName, user.LastName, token, ExpireIn, refreshToken.Token));
+            return Result.Success(new AuthResponse(user.Id, user.Email, user.FirstName, user.LastName, token, ExpireIn, refreshToken.Token, client?.ProfilePicturePath));
         }
 
         public async Task<AuthResponse?> RefreshTokenAsync(RefreshRequest request, CancellationToken cancellationToken)
@@ -131,7 +189,11 @@ namespace SurveyBasket.Services
             var roles = await _userManager.GetRolesAsync(user);
 
             var (token, ExpiresIn) = _tokenProveder.GenerateToken(user, roles);
-            return new AuthResponse(user.Id, user.Email, user.FirstName, user.LastName, token, ExpiresIn, newRefresh.Token);
+            
+            // Get profile picture if user is a client
+            var client = await _dbContext.Clients.FirstOrDefaultAsync(c => c.AppUserId == user.Id, cancellationToken);
+            
+            return new AuthResponse(user.Id, user.Email, user.FirstName, user.LastName, token, ExpiresIn, newRefresh.Token, client?.ProfilePicturePath);
         }
 
         public async Task<Result<CreateUserResponse>> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken)
@@ -142,7 +204,7 @@ namespace SurveyBasket.Services
 
             var user = new AppUser
             {
-                UserName = request.UserName,
+                UserName = request.Email,
                 Email = request.Email,
                 FirstName = request.FirstName,
                 LastName = request.LastName,
@@ -154,6 +216,28 @@ namespace SurveyBasket.Services
             {
                 var errors = string.Join(" ", result.Errors.Select(e => e.Description));
                 return Result.Failure<CreateUserResponse>(new Error("User.RegistrationFailed", errors));
+            }
+
+            if (request.Role == DefaultRoles.User)
+            {
+                var client = new Client
+                {
+                    FirstName = request.FirstName,
+                    LastName = request.LastName,
+                    NationalId = request.NationalId ?? string.Empty,
+                    Email = request.Email,
+                    MainAddress = request.MainAddress ?? string.Empty,
+                    AlternateAddress = request.AlternateAddress,
+                    MainMobile = request.MainMobile ?? string.Empty,
+                    AlternateMobile = request.AlternateMobile,
+                    DateOfBirth = request.DateOfBirth ?? default,
+                    Gender = request.Gender ?? string.Empty,
+                    AppUserId = user.Id,
+                    CreatedById = user.Id
+                };
+
+                await _dbContext.Clients.AddAsync(client, cancellationToken);
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
 
             // Assign the specified role

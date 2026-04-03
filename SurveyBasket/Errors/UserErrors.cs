@@ -1,4 +1,4 @@
-﻿using SurveyBasket.Abstractions;
+using SurveyBasket.Abstractions;
 
 namespace SurveyBasket.Errors
 {
@@ -6,6 +6,9 @@ namespace SurveyBasket.Errors
     {
         public static readonly Error invalidCredentials=
             new ("User.InvalidCredentials", "Invalid Email or Password. Try again.");
+
+        public static readonly Error UserNotFound=
+            new ("User.NotFound", "The user could not be found.");
 
         public static readonly Error InvalidRole =
             new("User.InvalidRole", "Role must be 'Admin' or 'User'.");
